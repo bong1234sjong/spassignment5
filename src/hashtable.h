@@ -16,9 +16,7 @@
 typedef struct node_t
 {
     char *key;
-    size_t key_size;
     char *value;
-    size_t value_size;
     struct node_t *next;
 } node_t;
 /*--------------------------------------------------------------------*/

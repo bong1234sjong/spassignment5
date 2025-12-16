@@ -1,13 +1,13 @@
-/*-------------------------------------------------------------------*/
-/* common.h                                                          */
-/* Author: Junghan Yoon, KyoungSoo Park                              */
-/*-------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/* common.h                                                           */
+/* Author: Junghan Yoon, KyoungSoo Park                               */
+/*--------------------------------------------------------------------*/
 #ifndef _COMMON_H
 #define _COMMON_H
-/*-------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
 #include <errno.h>
 #include <assert.h>
-/*-------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
 #define MAX_KEY_LEN 32
 #define BUF_SIZE 4096
 #define DEFAULT_PORT 8080
@@ -19,20 +19,22 @@
 #define TIMEOUT 1
 /*--------------------------------------------------------------------*/
 #ifdef DEBUG
-#define DEBUG_PRINT(...)                                               \
-    do                                                                 \
-    {                                                                  \
-        fprintf(stderr, "[%s:%d] %s: ", __FILE__, __LINE__, __func__); \
-        fprintf(stderr, __VA_ARGS__);                                  \
-        fprintf(stderr, "\n");                                         \
+#define DEBUG_PRINT(...)                                 \
+    do                                                   \
+    {                                                    \
+        fprintf(stderr, "[%s:%d] %s: " __VA_ARGS__ "\n", \
+                __FILE__, __LINE__, __func__);           \
     } while (0)
 #else
 #define DEBUG_PRINT(...) (void)0
 #endif
 #ifdef TRACE
-#define TRACE_PRINT()                 \
-    fprintf(stdout, "[%s:%d] %s()\n", \
-            __FILE__, __LINE__, __func__)
+#define TRACE_PRINT()                          \
+    do                                         \
+    {                                          \
+        fprintf(stdout, "[%s:%d] %s\n",        \
+                __FILE__, __LINE__, __func__); \
+    } while (0)
 #else
 #define TRACE_PRINT() (void)0
 #endif

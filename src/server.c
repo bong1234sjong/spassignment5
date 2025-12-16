@@ -17,6 +17,9 @@
 #include "common.h"
 #include "skvslib.h"
 /*--------------------------------------------------------------------*/
+/* free to add header files and global variables */
+
+/*--------------------------------------------------------------------*/
 struct thread_args
 {
     int listenfd;
@@ -57,8 +60,6 @@ void *handle_client(void *arg)
 /* Signal handler for SIGINT */
 void handle_sigint(int sig)
 {
-    TRACE_PRINT();
-    fprintf(stdout, "\nReceived SIGINT, initiating shutdown...\n");
     g_shutdown = 1;
 }
 /*--------------------------------------------------------------------*/

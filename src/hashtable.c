@@ -5,6 +5,9 @@
 /*--------------------------------------------------------------------*/
 #include "hashtable.h"
 /*--------------------------------------------------------------------*/
+/* free to add header files and global variables */
+
+/*--------------------------------------------------------------------*/
 int hash(const char *key, size_t hash_size)
 {
     TRACE_PRINT();
@@ -122,7 +125,6 @@ int hash_insert(hashtable_t *table, const char *key, const char *value)
     /* edit here */
 
     /*----------------------------------------------------------------*/
-    return 1;
 }
 /*--------------------------------------------------------------------*/
 int hash_read(hashtable_t *table, const char *key, char *dst, int quick)
@@ -132,7 +134,6 @@ int hash_read(hashtable_t *table, const char *key, char *dst, int quick)
     /* edit here */
 
     /*----------------------------------------------------------------*/
-    return 0;
 }
 /*--------------------------------------------------------------------*/
 int hash_update(hashtable_t *table, const char *key, const char *value)
@@ -142,7 +143,6 @@ int hash_update(hashtable_t *table, const char *key, const char *value)
     /* edit here */
 
     /*----------------------------------------------------------------*/
-    return 0;
 }
 /*--------------------------------------------------------------------*/
 int hash_delete(hashtable_t *table, const char *key)
@@ -152,7 +152,6 @@ int hash_delete(hashtable_t *table, const char *key)
     /* edit here */
 
     /*----------------------------------------------------------------*/
-    return 0;
 }
 /*--------------------------------------------------------------------*/
 /**

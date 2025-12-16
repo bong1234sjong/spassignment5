@@ -19,10 +19,10 @@ You will learn
 ## Logistics
 
 ### Hand-out
-Start by downloading the tarball from eTL and read the instructions here carefully.
+Start by downloading the tarball from Classum and read the instructions here carefully.
 
 ### Submission
-Submit on eTL. We accept no late submission.
+Submit on Classum. We accept no late submission.
 
 
 ## Background
@@ -196,8 +196,8 @@ There are many well known L7 protocols for a key-value store, such as memcached 
 However, for this assignment, we simplify L7 protocol processing as much as possible.
 
 ### L7 MSG formats
-1. For _CREATE_, _UPDATE_, and _DELETE_, requests should be formatted like "[ _CMD_ ] [ _key_ ] [ _value_ ]\n".
-Similarly, for _READ_ and _QREAD_, the requests should be "[ _CMD_ ] [ _key_ ]\n".
+1. For _CREATE_ and _UPDATE_ requests should be formatted like "[ _CMD_ ] [ _key_ ] [ _value_ ]\n".
+Similarly, _READ_, _QREAD_, and _DELETE_ requests should be formatted like "[ _CMD_ ] [ _key_ ]\n".
 2. For invalid request, SKVS server should respond "INVALID CMD\n".
 3. When there is no matched key-value, SKVS server should respond "NOT FOUND\n".
 4. If _CREATE_ fails due to collision, SKVS server should respond "COLLISION\n".

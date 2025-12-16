@@ -22,10 +22,14 @@ const char *g_cmds[CMD_COUNT] = {
 const char *g_lf = "\n";
 /*--------------------------------------------------------------------*/
 static inline enum CMD
-skvs_parse(char *buffer, size_t len, const char **key, const char **value)
+skvs_parse(char *buffer,
+           size_t len,
+           const char **key,
+           const char **value)
 {
     TRACE_PRINT();
     char *cmd;
+    char *saveptr;
     int i;
 
     if (len > BUF_SIZE)
@@ -59,7 +63,8 @@ skvs_parse(char *buffer, size_t len, const char **key, const char **value)
         *lf_ptr = '\0';
     }
 
-    cmd = strtok(buffer, " ");
+    saveptr = NULL;
+    cmd = strtok_r(buffer, " ", &saveptr);
     if (cmd == NULL)
     {
         /* no command found */
@@ -76,7 +81,7 @@ skvs_parse(char *buffer, size_t len, const char **key, const char **value)
     {
         if (strcmp(cmd, g_cmds[i]) == 0)
         {
-            *key = strtok(NULL, " ");
+            *key = strtok_r(NULL, " ", &saveptr);
             if (*key == NULL)
             {
                 /* no key found */
@@ -88,24 +93,29 @@ skvs_parse(char *buffer, size_t len, const char **key, const char **value)
                 return CMD_INVALID;
             }
 
-            *value = strtok(NULL, " ");
+            *value = strtok_r(NULL, " ", &saveptr);
 
             /* handle specific cases for READ and DELETE */
-            if ((i == CMD_READ || i == CMD_DELETE) && *value != NULL)
+            if ((i == CMD_READ ||
+                 i == CMD_DELETE ||
+                 i == CMD_QREAD) &&
+                *value != NULL)
             {
                 /* READ or DELETE should not have a value */
                 return CMD_INVALID;
             }
 
             /* handle specific cases for CREATE and UPDATE */
-            if ((i == CMD_CREATE || i == CMD_UPDATE) && *value == NULL)
+            if ((i == CMD_CREATE ||
+                 i == CMD_UPDATE) &&
+                *value == NULL)
             {
                 /* CREATE or UPDATE must have a value */
                 return CMD_INVALID;
             }
 
             /* check for extra tokens after value */
-            if (strtok(NULL, " ") != NULL)
+            if (strtok_r(NULL, " ", &saveptr) != NULL)
             {
                 /* extra tokens found */
                 return CMD_INVALID;
@@ -125,11 +135,17 @@ skvs_init(size_t hash_size, int delay)
 {
     TRACE_PRINT();
     struct skvs_ctx *ctx = calloc(1, sizeof(struct skvs_ctx));
+    if (!ctx)
+    {
+        DEBUG_PRINT("Failed to allocate skvs_ctx");
+        return NULL;
+    }
     /* initialize the global hash table */
     ctx->table = hash_init(hash_size, delay);
     if (ctx->table == NULL)
     {
         DEBUG_PRINT("Failed to initialize global hash table");
+        free(ctx);
         return NULL;
     }
 
@@ -139,6 +155,11 @@ skvs_init(size_t hash_size, int delay)
 int skvs_destroy(struct skvs_ctx *ctx, int dump)
 {
     TRACE_PRINT();
+    if (!ctx)
+    {
+        DEBUG_PRINT("Invalid skvs_ctx pointer");
+        return -1;
+    }
     if (dump)
     {
         hash_dump(ctx->table);
@@ -147,6 +168,7 @@ int skvs_destroy(struct skvs_ctx *ctx, int dump)
     {
         return -1;
     }
+    free(ctx);
 
     return 0;
 }
