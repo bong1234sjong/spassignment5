@@ -43,7 +43,7 @@ void *handle_client(void *arg)
     int listenfd = args->listenfd;
     /*----------------------------------------------------------------*/
     /* free to add any variables */
-    int connfd, used = 0, readb, clientclose;
+    int connfd, rused = 0, readb, clientclose, wb, wused;
     char rbuf[BUF_SIZE], wbuf[BUF_SIZE];
     size_t wlen, rlen;
     /*----------------------------------------------------------------*/
@@ -59,20 +59,28 @@ void *handle_client(void *arg)
         }
         setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, (int *)TIMEOUT, sizeof(int));
         setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, (int *)TIMEOUT, sizeof(int));
+        wused = 0;
         while(1) {
-            if ((readb = read(connfd, rbuf + used, BUF_SIZE - used)) <= 0) {
+            if ((readb = read(connfd, rbuf + rused, BUF_SIZE - rused)) <= 0) {
                 clientclose = 1;
                 break;
             }
-            used = used + readb;
-            if(rbuf[used-1] == '\n') {
-                if(used == 1) {
+            rused = rused + readb;
+            if(rbuf[rused-1] == '\n') {
+                if(rused == 1) {
                     clientclose = 1;
                     break;
                 }
-                rlen = (size_t)used;
+                rlen = (size_t)rused;
+                rused = 0;
                 skvs_serve(ctx, rbuf, rlen, wbuf, &wlen);
-                used = 0;
+                while(wused < wlen) {
+                    if ((wb = write(connfd, wbuf + wused, wlen - wused)) <= 0) {
+                        clientclose = 1;
+                        break;
+                    }
+                    wused = wused + wb;
+                }
             }
         }
         if (clientclose) {
