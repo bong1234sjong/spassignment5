@@ -18,7 +18,7 @@
 #include "skvslib.h"
 /*--------------------------------------------------------------------*/
 /* free to add header files and global variables */
-
+#include "netdb.h"
 /*--------------------------------------------------------------------*/
 struct thread_args
 {
@@ -72,7 +72,10 @@ int main(int argc, char *argv[])
     int delay = RWLOCK_DELAY;
     /*----------------------------------------------------------------*/
     /* free to declare any variables */
-
+    struct skvs_ctx *hashtable;
+    struct thread_args *pt_arg;
+    struct addrinfo hints, *listp, *p;
+    int listenfd, optval = 1;
     /*----------------------------------------------------------------*/
 
     /* parse command line options */
@@ -130,6 +133,29 @@ int main(int argc, char *argv[])
 
     /*----------------------------------------------------------------*/
     /* edit here */
+    if (hashtable = skvs_init(hash_size, delay) == NULL) {
+        fprintf(stderr, "Skvs_init Failed to Allocate Hash Table");
+        exit(EXIT_FAILURE);
+    }
+    //Create socketaddr struct
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_NUMERICSERV;
+    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+    //REMEMBER HANDLE FAILURE
+    getaddrinfo(NULL, port, &hints, &listp);
+    //Walk through list and bind
+    for(p = listp; p; p = p->ai_next) {
+        if((listenfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0 ){
+            continue;
+        }
+        //Eliminates "Already in use"
+        setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
+        //Bind descriptor to address
+        if (bind(listenfd, p->ai_addr, p->ai_addrlen) == 0)
+            break; /* Success */
+        close(listenfd); /* Bind failed, try the next */
+    }
 
     /*----------------------------------------------------------------*/
 
