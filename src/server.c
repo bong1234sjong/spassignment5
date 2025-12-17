@@ -167,6 +167,15 @@ int main(int argc, char *argv[])
         close(listenfd);
         return -1;
     }
+    pt_arg->ctx = hashtable;
+    pt_arg->listenfd = listenfd;
+    signal(SIGINT, handle_sigint);
+    //THREADS
+    
+
+    close(listenfd);
+    hash_dump(hashtable);
+    hash_destroy(hashtable);
 
     /*----------------------------------------------------------------*/
 
