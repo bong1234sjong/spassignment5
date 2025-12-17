@@ -73,10 +73,10 @@ int main(int argc, char *argv[])
     /*----------------------------------------------------------------*/
     /* free to declare any variables */
     struct skvs_ctx *hashtable;
-    struct thread_args *pt_arg;
     struct addrinfo hints, *listp, *p;
     int listenfd, optval = 1;
     char strport[6];
+    pthread_t tid[NUM_THREADS];
     /*----------------------------------------------------------------*/
 
     /* parse command line options */
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     /*----------------------------------------------------------------*/
     /* edit here */
-    if (hashtable = skvs_init(hash_size, delay) == NULL) {
+    if ((hashtable = skvs_init(hash_size, delay)) == NULL) {
         fprintf(stderr, "Skvs_init Failed to Allocate Hash Table");
         exit(EXIT_FAILURE);
     }
@@ -167,15 +167,21 @@ int main(int argc, char *argv[])
         close(listenfd);
         return -1;
     }
-    pt_arg->ctx = hashtable;
-    pt_arg->listenfd = listenfd;
     signal(SIGINT, handle_sigint);
     //THREADS
-    
+    for(int i = 0; i < NUM_THREADS; i++) {
+        struct thread_args *pt_arg = malloc(sizeof(struct thread_args));
+        pt_arg->ctx = hashtable;
+        pt_arg->listenfd = listenfd;
+        pt_arg->idx = i;
+        if((pthread_create(&tid[i], NULL, handle_client, pt_arg)) < 0) {
+            free(pt_arg);
+        }
+    }
 
     close(listenfd);
-    hash_dump(hashtable);
-    hash_destroy(hashtable);
+    hash_dump(hashtable->table);
+    hash_destroy(hashtable->table);
 
     /*----------------------------------------------------------------*/
 
