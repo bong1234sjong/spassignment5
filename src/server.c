@@ -43,7 +43,9 @@ void *handle_client(void *arg)
     int listenfd = args->listenfd;
     /*----------------------------------------------------------------*/
     /* free to add any variables */
-    int connfd;
+    int connfd, used = 0, readb, clientclose;
+    char rbuf[BUF_SIZE], wbuf[BUF_SIZE];
+    size_t wlen, rlen;
     /*----------------------------------------------------------------*/
 
     free(args);
@@ -55,8 +57,28 @@ void *handle_client(void *arg)
         if ((connfd = accept(listenfd, NULL, NULL )) < 0) {
             continue;
         }
-        setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO | SO_SNDTIMEO, (int *)TIMEOUT, sizeof(int));
+        setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, (int *)TIMEOUT, sizeof(int));
         setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, (int *)TIMEOUT, sizeof(int));
+        while(1) {
+            if ((readb = read(connfd, rbuf + used, BUF_SIZE - used)) <= 0) {
+                clientclose = 1;
+                break;
+            }
+            used = used + readb;
+            if(rbuf[used-1] == '\n') {
+                if(used == 1) {
+                    clientclose = 1;
+                    break;
+                }
+                rlen = (size_t)used;
+                skvs_serve(ctx, rbuf, rlen, wbuf, &wlen);
+                used = 0;
+            }
+        }
+        if (clientclose) {
+            close(connfd);
+            clientclose = 0;
+        }
     }
     close(connfd);
     //The socket should close immediately if the client feeds an empty line or EOF.
