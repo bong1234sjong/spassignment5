@@ -226,8 +226,7 @@ int main(int argc, char *argv[])
     // "Please use the SIGINT handler only to signal worker threads to exit their loops (e.g., by setting a shutdown flag).
     // The hash dump should be performed by the main thread after all worker threads have exited."
     close(listenfd);
-    hash_dump(hashtable->table);
-    hash_destroy(hashtable->table);
+    skvs_destroy(hashtable, 1);
 
     /*----------------------------------------------------------------*/
 
