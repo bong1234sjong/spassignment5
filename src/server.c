@@ -43,7 +43,7 @@ void *handle_client(void *arg)
     int listenfd = args->listenfd;
     /*----------------------------------------------------------------*/
     /* free to add any variables */
-
+    int connfd;
     /*----------------------------------------------------------------*/
 
     free(args);
@@ -51,6 +51,15 @@ void *handle_client(void *arg)
 
     /*----------------------------------------------------------------*/
     /* edit here */
+    while(g_shutdown != 1) {
+        if ((connfd = accept(listenfd, NULL, NULL )) < 0) {
+            continue;
+        }
+        setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO | SO_SNDTIMEO, (int *)TIMEOUT, sizeof(int));
+        setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, (int *)TIMEOUT, sizeof(int));
+    }
+    close(connfd);
+    //The socket should close immediately if the client feeds an empty line or EOF.
 
     /*----------------------------------------------------------------*/
 
@@ -178,7 +187,8 @@ int main(int argc, char *argv[])
             free(pt_arg);
         }
     }
-
+    // "Please use the SIGINT handler only to signal worker threads to exit their loops (e.g., by setting a shutdown flag).
+    // The hash dump should be performed by the main thread after all worker threads have exited."
     close(listenfd);
     hash_dump(hashtable->table);
     hash_destroy(hashtable->table);
