@@ -123,7 +123,24 @@ int hash_insert(hashtable_t *table, const char *key, const char *value)
     TRACE_PRINT();
     /*----------------------------------------------------------------*/
     /* edit here */
-    return 0;
+    int keyhash = hash(key, table->hash_size);
+    rwlock_write_lock(&table->locks[keyhash]);
+    node_t *cur = table->buckets[keyhash];
+    while(cur != NULL) {
+        if((strcmp(key, cur->key)) == 0) {
+            rwlock_write_unlock(&table->locks[keyhash]);
+            return 0;
+        }
+        cur = cur->next;
+    }
+    node_t *n = malloc(sizeof(node_t));
+    n->key = strdup(key);
+    n->value = strdup(value);
+    n->next = table->buckets[keyhash];
+    table->buckets[keyhash] = n;
+    table->bucket_sizes[keyhash] += 1;
+    rwlock_write_unlock(&table->locks[keyhash]);
+    return 1;
     /*----------------------------------------------------------------*/
 }
 /*--------------------------------------------------------------------*/
@@ -132,6 +149,18 @@ int hash_read(hashtable_t *table, const char *key, char *dst, int quick)
     TRACE_PRINT();
     /*----------------------------------------------------------------*/
     /* edit here */
+    int keyhash = hash(key, table->hash_size);
+    rwlock_read_lock(&table->locks[keyhash], quick);
+    node_t *cur = table->buckets[keyhash];
+    while(cur != NULL) {
+        if((strcmp(key, cur->key)) == 0) {
+            strcpy(dst, cur->value);
+            rwlock_read_unlock(&table->locks[keyhash]);
+            return 1;
+        }
+        cur = cur->next;
+    }
+    rwlock_read_unlock(&table->locks[keyhash]);
     return 0;
     /*----------------------------------------------------------------*/
 }
@@ -141,6 +170,20 @@ int hash_update(hashtable_t *table, const char *key, const char *value)
     TRACE_PRINT();
     /*----------------------------------------------------------------*/
     /* edit here */
+    int keyhash = hash(key, table->hash_size);
+    rwlock_write_lock(&table->locks[keyhash]);
+    node_t *cur = table->buckets[keyhash];
+    while(cur != NULL) {
+        if((strcmp(key, cur->key)) == 0) {
+            char *oldv = cur->value;
+            cur->value = strdup(value);
+            free(oldv);
+            rwlock_write_unlock(&table->locks[keyhash]);
+            return 1;
+        }
+        cur = cur->next;
+    }
+    rwlock_write_unlock(&table->locks[keyhash]);
     return 0;
     /*----------------------------------------------------------------*/
 }
@@ -150,6 +193,28 @@ int hash_delete(hashtable_t *table, const char *key)
     TRACE_PRINT();
     /*----------------------------------------------------------------*/
     /* edit here */
+    int keyhash = hash(key, table->hash_size);
+    rwlock_write_lock(&table->locks[keyhash]);
+    node_t *cur = table->buckets[keyhash];
+    node_t *prev = NULL;
+    while(cur != NULL) {
+        if((strcmp(key, cur->key)) == 0) {
+            if(prev == NULL) {
+                table->buckets[keyhash] = cur->next;
+            } else {
+                prev->next = cur->next;
+            }
+            free(cur->key);
+            free(cur->value);
+            free(cur);
+            table->bucket_sizes[keyhash]--;
+            rwlock_write_unlock(&table->locks[keyhash]);
+            return 1;
+        }
+        prev = cur;
+        cur = cur->next;
+    }
+    rwlock_write_unlock(&table->locks[keyhash]);
     return 0;
     /*----------------------------------------------------------------*/
 }

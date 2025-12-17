@@ -148,6 +148,10 @@ int rwlock_destroy(rwlock_t *rw)
     TRACE_PRINT();
 /*--------------------------------------------------------------------*/
     /* edit here */
+    struct uctx *u = (struct uctx *)rw->uctx;
+    pthread_cond_destroy(&u->condvar);
+    free(rw->uctx);
+    pthread_mutex_destroy(&rw->lock);
     return 0;
 /*--------------------------------------------------------------------*/
 }
