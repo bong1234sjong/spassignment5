@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
     struct thread_args *pt_arg;
     struct addrinfo hints, *listp, *p;
     int listenfd, optval = 1;
+    char strport[6];
     /*----------------------------------------------------------------*/
 
     /* parse command line options */
@@ -138,12 +139,12 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     //Create socketaddr struct
+    snprintf(strport, sizeof(strport), "%d", port);
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_NUMERICSERV;
-    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+    hints.ai_flags = AI_NUMERICHOST | AI_ADDRCONFIG | AI_NUMERICSERV;
     //REMEMBER HANDLE FAILURE
-    getaddrinfo(NULL, port, &hints, &listp);
+    getaddrinfo(ip, strport, &hints, &listp);
     //Walk through list and bind
     for(p = listp; p; p = p->ai_next) {
         if((listenfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0 ){
@@ -155,6 +156,16 @@ int main(int argc, char *argv[])
         if (bind(listenfd, p->ai_addr, p->ai_addrlen) == 0)
             break; /* Success */
         close(listenfd); /* Bind failed, try the next */
+    }
+
+    freeaddrinfo(listp);
+    if(!p) {
+        return -1;
+    }
+
+    if(listen(listenfd, NUM_BACKLOG) < 0) {
+        close(listenfd);
+        return -1;
     }
 
     /*----------------------------------------------------------------*/
