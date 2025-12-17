@@ -53,6 +53,9 @@ void *handle_client(void *arg)
 
     /*----------------------------------------------------------------*/
     /* edit here */
+
+    //Timeout is wrong need to define tv.tv sec
+    // Maybe just check g_shutdown in loop, no need to close after while loop then
     while(g_shutdown != 1) {
         if ((connfd = accept(listenfd, NULL, NULL )) < 0) {
             continue;
@@ -216,6 +219,9 @@ int main(int argc, char *argv[])
         if((pthread_create(&tid[i], NULL, handle_client, pt_arg)) < 0) {
             free(pt_arg);
         }
+    }
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(tid[i], NULL);
     }
     // "Please use the SIGINT handler only to signal worker threads to exit their loops (e.g., by setting a shutdown flag).
     // The hash dump should be performed by the main thread after all worker threads have exited."
