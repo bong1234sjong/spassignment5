@@ -232,8 +232,6 @@ int main(int argc, char *argv[])
     for (int i = 0; i < num_threads; i++) {
         pthread_join(tid[i], NULL);
     }
-    // "Please use the SIGINT handler only to signal worker threads to exit their loops (e.g., by setting a shutdown flag).
-    // The hash dump should be performed by the main thread after all worker threads have exited."
     close(listenfd);
     skvs_destroy(hashtable, 1);
 

@@ -35,6 +35,9 @@ int rwlock_init(rwlock_t *rw, int delay)
     rw->current_writers = 0;
     rw->delay = delay;
     struct uctx *u = rw->uctx = malloc(sizeof(struct uctx));
+    if (u == NULL) {
+        return -1;
+    }
     u->head = u->size = u->tail = 0;
     if((pthread_cond_init(&u->condvar, NULL)) < 0) {
         return -1;
@@ -51,26 +54,40 @@ int rwlock_read_lock(rwlock_t *rw, int quick)
     /* edit here */
     struct uctx *u = (struct uctx *)rw->uctx;
     if(quick) {
-        pthread_mutex_lock(&rw->lock);
+        if((pthread_mutex_lock(&rw->lock)) != 0) {
+            return -1;
+        }
         while(rw->current_writers != 0) {
-            pthread_cond_wait(&u->condvar, &rw->lock);
+            if((pthread_cond_wait(&u->condvar, &rw->lock)) != 0) {
+                return -1;
+            }
         }
         rw->current_readers++;
-        pthread_mutex_unlock(&rw->lock);
+        if((pthread_mutex_unlock(&rw->lock)) != 0) {
+            return -1;
+        }
     } else if (quick == 0) {
-        pthread_mutex_lock(&rw->lock);
+        if((pthread_mutex_lock(&rw->lock)) != 0) {
+            return -1;
+        }
         u->entries[u->tail].tid = pthread_self();
         u->entries[u->tail].is_writer = 0;
         u->size++;
         u->tail = (u->tail + 1) % RING_SIZE;
         while(rw->current_writers != 0 || !pthread_equal(u->entries[u->head].tid, pthread_self())) {
-            pthread_cond_wait(&u->condvar, &rw->lock);
+            if((pthread_cond_wait(&u->condvar, &rw->lock)) != 0) {
+                return -1;
+            }
         }
         u->size--;
         u->head = (u->head + 1) % RING_SIZE;
         rw->current_readers++;   
-        pthread_cond_broadcast(&u->condvar);
-        pthread_mutex_unlock(&rw->lock);
+        if((pthread_cond_broadcast(&u->condvar)) != 0) {
+            return -1;
+        }
+        if((pthread_mutex_unlock(&rw->lock)) != 0) {
+            return -1;
+        }
     }
     
     return 0;
@@ -89,12 +106,18 @@ int rwlock_read_unlock(rwlock_t *rw)
 /*--------------------------------------------------------------------*/
     /* edit here */
     struct uctx *u = (struct uctx *)rw->uctx;
-    pthread_mutex_lock(&rw->lock);
+    if((pthread_mutex_lock(&rw->lock)) != 0) {
+        return -1;
+    }
     rw->current_readers--;
     if(rw->current_readers == 0) {
-        pthread_cond_broadcast(&u->condvar);
+        if((pthread_cond_broadcast(&u->condvar)) != 0) {
+            return -1;
+        }
     }
-    pthread_mutex_unlock(&rw->lock);
+    if((pthread_mutex_unlock(&rw->lock)) != 0) {
+        return -1;
+    }
     return 0;
 /*--------------------------------------------------------------------*/
 }
@@ -105,18 +128,24 @@ int rwlock_write_lock(rwlock_t *rw)
 /*--------------------------------------------------------------------*/
     /* edit here */
     struct uctx *u = (struct uctx *)rw->uctx;
-    pthread_mutex_lock(&rw->lock);
+    if((pthread_mutex_lock(&rw->lock)) != 0) {
+        return -1;
+    }
     u->entries[u->tail].tid = pthread_self();
     u->entries[u->tail].is_writer = 1;
     u->size++;
     u->tail = (u->tail + 1) % RING_SIZE;
     while(rw->current_readers != 0 || rw->current_writers != 0 || !pthread_equal(u->entries[u->head].tid, pthread_self())) {
-        pthread_cond_wait(&u->condvar, &rw->lock);
+        if((pthread_cond_wait(&u->condvar, &rw->lock)) != 0) {
+            return -1;
+        }
     }
     u->size--;
     u->head = (u->head + 1) % RING_SIZE;
     rw->current_writers++;   
-    pthread_mutex_unlock(&rw->lock);
+    if((pthread_mutex_unlock(&rw->lock)) != 0) {
+        return -1;
+    }
     return 0;
 /*--------------------------------------------------------------------*/
 }
@@ -133,12 +162,18 @@ int rwlock_write_unlock(rwlock_t *rw)
 /*--------------------------------------------------------------------*/
     /* edit here */
     struct uctx *u = (struct uctx *)rw->uctx;
-    pthread_mutex_lock(&rw->lock);
+    if((pthread_mutex_lock(&rw->lock)) != 0) {
+        return -1;
+    }
     rw->current_writers--;
     if(rw->current_writers == 0) {
-        pthread_cond_broadcast(&u->condvar);
+        if((pthread_cond_broadcast(&u->condvar)) != 0) {
+            return -1;
+        }
     }
-    pthread_mutex_unlock(&rw->lock);
+    if((pthread_mutex_unlock(&rw->lock)) != 0) {
+        return -1;
+    }
     return 0;
 /*--------------------------------------------------------------------*/
 }
