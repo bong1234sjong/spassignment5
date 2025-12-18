@@ -46,6 +46,9 @@ void *handle_client(void *arg)
     int connfd, rused = 0, readb, clientclose, wb, wused;
     char rbuf[BUF_SIZE], wbuf[BUF_SIZE];
     size_t wlen, rlen;
+    struct timeval tv;
+    tv.tv_sec = TIMEOUT;
+    tv.tv_sec = TIMEOUT;
     /*----------------------------------------------------------------*/
 
     free(args);
@@ -60,8 +63,8 @@ void *handle_client(void *arg)
         if ((connfd = accept(listenfd, NULL, NULL )) < 0) {
             continue;
         }
-        setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, (int *)TIMEOUT, sizeof(int));
-        setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, (int *)TIMEOUT, sizeof(int));
+        setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+        setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
         wused = 0;
         while(1) {
             if ((readb = read(connfd, rbuf + rused, BUF_SIZE - rused)) <= 0) {
