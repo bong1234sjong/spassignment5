@@ -48,7 +48,7 @@ void *handle_client(void *arg)
     size_t wlen, rlen;
     struct timeval tv;
     tv.tv_sec = TIMEOUT;
-    tv.tv_sec = 0;
+    tv.tv_usec = 0;
     /*----------------------------------------------------------------*/
 
     free(args);
@@ -60,13 +60,22 @@ void *handle_client(void *arg)
     //Timeout is wrong need to define tv.tv sec
     // Maybe just check g_shutdown in loop, no need to close after while loop then
     while(g_shutdown != 1) {
-        if ((connfd = accept(listenfd, NULL, NULL )) < 0) {
-            continue;
+        if ((setsockopt(listenfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) < 0) {
+            fprintf(stderr, "setsockopt SO_RCVTIMEO Failed on Listenfd\n");
+            break;
         }
-        setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-        setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+        if ((connfd = accept(listenfd, NULL, NULL )) < 0) {
+            if (g_shutdown) break;   // exit thread
+            continue; 
+        }
+        if ((setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) < 0) {fprintf(stderr, "setsockopt SO_RCVTIMEO Failed\n");};
+        if ((setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv))) < 0 ) {fprintf(stderr, "setsockopt SO_SNDTIMEO Failed\n");};
         while(1) {
-            if ((readb = read(connfd, rbuf + rused, BUF_SIZE - rused)) == 0) {
+            if ((readb = read(connfd, rbuf + rused, BUF_SIZE - rused)) <= 0) {
+                if (errno == EINTR) continue;
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    continue;
+                }
                 clientclose = 1;
                 break;
             }
@@ -89,14 +98,11 @@ void *handle_client(void *arg)
                 }
             }
         }
-        if (clientclose) {
+    }
+    if (clientclose) {
             close(connfd);
             clientclose = 0;
-        }
     }
-    close(connfd);
-    //The socket should close immediately if the client feeds an empty line or EOF.
-
     /*----------------------------------------------------------------*/
 
     return NULL;
@@ -121,7 +127,6 @@ int main(int argc, char *argv[])
     struct addrinfo hints, *listp, *p;
     int listenfd, optval = 1;
     char strport[6];
-    pthread_t tid[NUM_THREADS];
     /*----------------------------------------------------------------*/
 
     /* parse command line options */
@@ -214,7 +219,8 @@ int main(int argc, char *argv[])
     }
     signal(SIGINT, handle_sigint);
     //THREADS
-    for(int i = 0; i < NUM_THREADS; i++) {
+    pthread_t tid[num_threads];
+    for(int i = 0; i < num_threads; i++) {
         struct thread_args *pt_arg = malloc(sizeof(struct thread_args));
         pt_arg->ctx = hashtable;
         pt_arg->listenfd = listenfd;
@@ -223,7 +229,7 @@ int main(int argc, char *argv[])
             free(pt_arg);
         }
     }
-    for (int i = 0; i < NUM_THREADS; i++) {
+    for (int i = 0; i < num_threads; i++) {
         pthread_join(tid[i], NULL);
     }
     // "Please use the SIGINT handler only to signal worker threads to exit their loops (e.g., by setting a shutdown flag).
