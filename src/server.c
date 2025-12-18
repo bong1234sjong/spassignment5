@@ -43,12 +43,12 @@ void *handle_client(void *arg)
     int listenfd = args->listenfd;
     /*----------------------------------------------------------------*/
     /* free to add any variables */
-    int connfd, rused = 0, readb, clientclose, wb, wused;
+    int connfd, rused = 0, readb, clientclose = 0, wb, wused;
     char rbuf[BUF_SIZE], wbuf[BUF_SIZE];
     size_t wlen, rlen;
     struct timeval tv;
     tv.tv_sec = TIMEOUT;
-    tv.tv_sec = TIMEOUT;
+    tv.tv_sec = 0;
     /*----------------------------------------------------------------*/
 
     free(args);
@@ -65,9 +65,8 @@ void *handle_client(void *arg)
         }
         setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
         setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-        wused = 0;
         while(1) {
-            if ((readb = read(connfd, rbuf + rused, BUF_SIZE - rused)) <= 0) {
+            if ((readb = read(connfd, rbuf + rused, BUF_SIZE - rused)) == 0) {
                 clientclose = 1;
                 break;
             }
@@ -80,6 +79,7 @@ void *handle_client(void *arg)
                 rlen = (size_t)rused;
                 rused = 0;
                 skvs_serve(ctx, rbuf, rlen, wbuf, &wlen);
+                wused = 0;
                 while(wused < wlen) {
                     if ((wb = write(connfd, wbuf + wused, wlen - wused)) <= 0) {
                         clientclose = 1;
