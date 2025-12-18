@@ -59,18 +59,18 @@ void *handle_client(void *arg)
 
     //Timeout is wrong need to define tv.tv sec
     // Maybe just check g_shutdown in loop, no need to close after while loop then
-    while(g_shutdown != 1) {
+    while(!g_shutdown) {
         if ((setsockopt(listenfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) < 0) {
             fprintf(stderr, "setsockopt SO_RCVTIMEO Failed on Listenfd\n");
             break;
         }
         if ((connfd = accept(listenfd, NULL, NULL )) < 0) {
-            if (g_shutdown) break;   // exit thread
+            if (g_shutdown) break;
             continue; 
         }
         if ((setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) < 0) {fprintf(stderr, "setsockopt SO_RCVTIMEO Failed\n");};
         if ((setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv))) < 0 ) {fprintf(stderr, "setsockopt SO_SNDTIMEO Failed\n");};
-        while(1) {
+        while(!g_shutdown) {
             if ((readb = read(connfd, rbuf + rused, BUF_SIZE - rused)) <= 0) {
                 if (errno == EINTR) continue;
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
